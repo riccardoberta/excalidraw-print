@@ -1,0 +1,4 @@
+node_modules/
+www/bundle.js
+test/*.pdf
+.DS_Store

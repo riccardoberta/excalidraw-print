@@ -1,0 +1,21 @@
+{
+  "name": "excalidraw-print",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "print": "node build.mjs && node src/cli.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.1",
+    "esbuild": "^0.28.2",
+    "pdf-lib": "^1.17.1",
+    "playwright": "^1.62.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
