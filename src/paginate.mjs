@@ -38,18 +38,25 @@ function isReddish(hex) {
  * returns their combined x-range plus the ids to exclude from rendering.
  */
 export function findMarginRectangle(elements) {
-  const guides = elements.filter(
+  const redRectangles = elements.filter(
     (el) =>
       !el.isDeleted && el.type === "rectangle" && isReddish(el.strokeColor),
   );
 
-  if (guides.length === 0) {
+  if (redRectangles.length === 0) {
     throw new Error(
       "No red rectangle found among the drawing's elements " +
         "(expected: a 'rectangle' element with a red strokeColor, " +
         "used to mark the horizontal margins).",
     );
   }
+
+  // A drawing can have other red-stroked rectangles as actual content
+  // (e.g. a box highlighting a formula); only the margin guide is
+  // expected to span most of the drawing's height, so only keep
+  // rectangles close to the tallest one.
+  const maxHeight = Math.max(...redRectangles.map((el) => el.height));
+  const guides = redRectangles.filter((el) => el.height >= maxHeight * 0.5);
 
   const angled = guides.filter((el) => el.angle && Math.abs(el.angle) > 1e-3);
   if (angled.length > 0) {

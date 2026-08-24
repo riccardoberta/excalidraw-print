@@ -26,7 +26,7 @@ npx playwright install chromium
 
 ## The margin guide rectangle
 
-The tool needs one **rectangle** element on the canvas with a **red stroke color** (Excalidraw's default red swatch, e.g. `#e03131`). Its horizontal extent (`x` to `x + width`) defines the printable width — the guide's *height* and vertical position don't matter, it can be as tall as you like, or you can just stretch it the full length of your notes as you write.
+The tool needs one **rectangle** element on the canvas with a **red stroke color** (Excalidraw's default red swatch, e.g. `#e03131`). Its horizontal extent (`x` to `x + width`) defines the printable width — the guide's *height* and vertical position don't matter, it can be as tall as you like, or you can just stretch it the full length of your notes as you write. If your notes also use small red-stroked rectangles as content (e.g. boxing a formula), those are left alone — only rectangle(s) at least half as tall as the tallest red rectangle in the drawing count as the guide.
 
 Everything to the left/right of the guide gets clipped off; everything above/below it (i.e. all your actual content) becomes the printable area for pagination. The guide rectangle itself is excluded from the printed output by default.
 
