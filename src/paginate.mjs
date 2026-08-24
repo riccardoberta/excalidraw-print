@@ -81,13 +81,11 @@ export function computeContentBounds(elements, excludeIds) {
 }
 
 /**
- * Groups elements that must never be separated across a page break:
- * explicit Excalidraw groups (shared groupIds) and arrows/lines bound to
- * another element (startBinding/endBinding) — an arrow stranded on a
- * different page than what it points to is just as bad as cutting it.
+ * Groups elements sharing an Excalidraw group (groupIds) into single
+ * blocks, so a page break can never separate elements the user grouped
+ * together.
  */
 function buildBlocks(elements) {
-  const byId = new Map(elements.map((el) => [el.id, el]));
   const parent = new Map(elements.map((el) => [el.id, el.id]));
 
   const find = (id) => {
@@ -98,16 +96,10 @@ function buildBlocks(elements) {
     return id;
   };
   const union = (a, b) => {
-    if (!byId.has(a) || !byId.has(b)) return;
     const ra = find(a);
     const rb = find(b);
     if (ra !== rb) parent.set(ra, rb);
   };
-
-  for (const el of elements) {
-    if (el.startBinding?.elementId) union(el.id, el.startBinding.elementId);
-    if (el.endBinding?.elementId) union(el.id, el.endBinding.elementId);
-  }
 
   const groupRep = new Map();
   for (const el of elements) {
@@ -132,44 +124,12 @@ function buildBlocks(elements) {
   }));
 }
 
-// A lone short text block (a section heading) is an orphan risk whenever
-// it sits at least as close to what follows as to what precedes it: glue
-// it to whatever follows so a page break can never strand it apart from
-// its own section. Hand-drawn notes rarely have neatly consistent
-// spacing, so this compares gaps directly rather than by a fixed ratio.
-const ORPHAN_MAX_HEIGHT = 80;
-const ORPHAN_GAP_RATIO = 1;
-
-function mergeOrphanHeaders(blocks) {
-  const sorted = [...blocks].sort((a, b) => a.y - b.y);
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const block = sorted[i];
-    const isHeaderLike =
-      (block.elements.length === 1 && block.elements[0].type === "text") ||
-      block.yEnd - block.y <= ORPHAN_MAX_HEIGHT;
-    if (!isHeaderLike) continue;
-
-    const next = sorted[i + 1];
-    const gapAfter = next.y - block.yEnd;
-    const gapBefore = i > 0 ? block.y - sorted[i - 1].yEnd : Infinity;
-
-    if (gapAfter <= gapBefore * ORPHAN_GAP_RATIO) {
-      next.elements = [...block.elements, ...next.elements];
-      next.y = Math.min(next.y, block.y);
-      block.elements = []; // absorbed, drop it below
-    }
-  }
-
-  return sorted.filter((block) => block.elements.length > 0);
-}
-
 /**
  * Merges every block's vertical interval into a sorted list of occupied
  * [start, end] bands (ink), so we can find whitespace gaps between them.
  */
 function occupiedBands(elements, mergeEps = 2) {
-  const blocks = mergeOrphanHeaders(buildBlocks(elements));
+  const blocks = buildBlocks(elements);
   const intervals = blocks
     .map((block) => [block.y, block.yEnd])
     .sort((a, b) => a[0] - b[0]);
