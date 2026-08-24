@@ -41,13 +41,28 @@ if ! curl -s -o /dev/null "http://127.0.0.1:$PORT/defaults"; then
   done
 fi
 
-# Prefer opening as a standalone, chrome-less app window (using the
-# Chromium build Playwright already manages) instead of a regular browser
-# tab; fall back to the system default browser if that's unavailable.
-# --remote-debugging-port marks this as an automation-controlled instance
-# (even though nothing connects to it), which is what keeps this
-# "Chrome for Testing" build from showing its "not for regular use" banner.
-CHROME_PATH="$("$NODE_BIN" -e "console.log(require('playwright').chromium.executablePath())" 2>/dev/null || true)"
+# Prefer opening as a standalone, chrome-less app window instead of a
+# regular browser tab. A real installed Chromium-based browser is used
+# when available, since Playwright's own "Chrome for Testing" build always
+# shows a "not for regular use" banner outside of actual CDP-driven
+# automation, with no flag to suppress it. Falls back to Playwright's
+# build, then to the system default browser, if nothing else is found.
+CHROME_CANDIDATES=(
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+  "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+  "/Applications/Chromium.app/Contents/MacOS/Chromium"
+)
+CHROME_PATH=""
+for candidate in "${CHROME_CANDIDATES[@]}"; do
+  if [ -x "$candidate" ]; then
+    CHROME_PATH="$candidate"
+    break
+  fi
+done
+if [ -z "$CHROME_PATH" ]; then
+  CHROME_PATH="$("$NODE_BIN" -e "console.log(require('playwright').chromium.executablePath())" 2>/dev/null || true)"
+fi
 echo "chrome path: $CHROME_PATH"
 
 CHROME_PID=""
