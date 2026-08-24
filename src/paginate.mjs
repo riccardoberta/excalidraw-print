@@ -127,9 +127,15 @@ function buildBlocks(elements) {
 /**
  * Merges every block's vertical interval into a sorted list of occupied
  * [start, end] bands (ink), so we can find whitespace gaps between them.
+ * Arrows/lines don't count as occupying space here: they're often used as
+ * connectors pointing from one group toward the next, whose bounding box
+ * would otherwise bridge two unrelated groups into one huge occupied
+ * region. They're still rendered normally; a page break landing on one
+ * just clips that thin connecting line, not any real content.
  */
 function occupiedBands(elements, mergeEps = 2) {
-  const blocks = buildBlocks(elements);
+  const contentElements = elements.filter((el) => el.type !== "arrow" && el.type !== "line");
+  const blocks = buildBlocks(contentElements);
   const intervals = blocks
     .map((block) => [block.y, block.yEnd])
     .sort((a, b) => a[0] - b[0]);
