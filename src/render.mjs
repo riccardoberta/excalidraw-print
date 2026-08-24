@@ -96,7 +96,9 @@ export async function renderToPdf(scene, bounds, pages, options) {
   const printableWidthMm = sizeMm.width - 2 * marginMm;
   const printableHeightMm = sizeMm.height - 2 * marginMm;
   const pxPerMm = dpi / 25.4;
+  const ptPerPx = 72 / dpi;
   const widthPx = printableWidthMm * pxPerMm;
+  const printableHeightPx = printableHeightMm * pxPerMm;
 
   const sceneWidth = bounds.xMax - bounds.xMin;
   const scale = widthPx / sceneWidth; // px per scene-unit
@@ -113,40 +115,49 @@ export async function renderToPdf(scene, bounds, pages, options) {
     const pngPaths = [];
     for (let i = 0; i < pages.length; i++) {
       const { yStart, yEnd } = pages[i];
-      const frame = makeFrameElement(
-        bounds.xMin,
-        yStart,
-        sceneWidth,
-        yEnd - yStart,
-      );
-      const heightPx = (yEnd - yStart) * scale;
+      const sceneHeight = yEnd - yStart;
+      const frame = makeFrameElement(bounds.xMin, yStart, sceneWidth, sceneHeight);
+
+      // Normally every page renders at the same scale (full printable
+      // width). The one exception is a single element taller than a full
+      // page (paginate() gives it its own, taller-than-normal page rather
+      // than cutting it) — shrink that page's own scale so it still fits
+      // within the printable height, instead of overflowing the sheet.
+      let heightPx = sceneHeight * scale;
+      let pageWidthPx = widthPx;
+      if (heightPx > printableHeightPx) {
+        const shrink = printableHeightPx / heightPx;
+        heightPx *= shrink;
+        pageWidthPx *= shrink;
+      }
+
       const outPath = path.join(tmpDir, `page-${i + 1}.png`);
 
       console.log(`Rendering page ${i + 1}/${pages.length}...`);
       await renderPageToPng(
         page,
-        { elements: scene.elements, files: scene.files, frame, widthPx, heightPx },
+        { elements: scene.elements, files: scene.files, frame, widthPx: pageWidthPx, heightPx },
         outPath,
       );
-      pngPaths.push({ outPath, heightPx });
+      pngPaths.push({ outPath, widthPx: pageWidthPx, heightPx });
     }
 
     const pdfDoc = await PDFDocument.create();
     const pageWidthPt = mmToPt(sizeMm.width);
     const pageHeightPt = mmToPt(sizeMm.height);
     const marginPt = mmToPt(marginMm);
-    const printableWidthPt = mmToPt(printableWidthMm);
 
-    for (const { outPath, heightPx } of pngPaths) {
+    for (const { outPath, widthPx: pageWidthPx, heightPx } of pngPaths) {
       const pngBytes = fs.readFileSync(outPath);
       const png = await pdfDoc.embedPng(pngBytes);
       const pdfPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
-      const printableHeightPt = (heightPx / widthPx) * printableWidthPt;
+      const imgWidthPt = pageWidthPx * ptPerPx;
+      const imgHeightPt = heightPx * ptPerPx;
       pdfPage.drawImage(png, {
         x: marginPt,
-        y: pageHeightPt - marginPt - printableHeightPt,
-        width: printableWidthPt,
-        height: printableHeightPt,
+        y: pageHeightPt - marginPt - imgHeightPt,
+        width: imgWidthPt,
+        height: imgHeightPt,
       });
     }
 

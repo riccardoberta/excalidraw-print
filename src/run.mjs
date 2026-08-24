@@ -46,7 +46,6 @@ export async function generatePdf({
   pageSize = "a4",
   marginMm = 15,
   dpi = 200,
-  tolerance = 0.25,
   keepGuide = false,
 }) {
   if (!input) throw new Error("Missing input (link or .excalidraw file path)");
@@ -74,12 +73,7 @@ export async function generatePdf({
     ? scene.elements.filter((el) => !el.isDeleted)
     : scene.elements.filter((el) => !el.isDeleted && !guideIds.has(el.id));
 
-  const pages = paginate(elementsForRender, {
-    yMin,
-    yMax,
-    pageHeightScene,
-    toleranceFraction: tolerance,
-  });
+  const pages = paginate(elementsForRender, { yMin, yMax, pageHeightScene });
   console.log(`Paginated into ${pages.length} page(s).`);
 
   await renderToPdf(

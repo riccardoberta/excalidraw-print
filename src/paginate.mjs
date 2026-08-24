@@ -103,29 +103,18 @@ function occupiedBands(elements, mergeEps = 2) {
 }
 
 /**
- * Splits [yMin, yMax] into pages of ~pageHeightScene each, nudging every
- * break point into the nearest whitespace gap (within toleranceFraction of
- * a page height) so no element is cut in half.
+ * Splits [yMin, yMax] into pages of up to pageHeightScene each. A break is
+ * never placed inside an element: if the nominal page height would land
+ * inside one, the break backs off to just before that element instead (it
+ * moves whole to the next page, shrinking this page), unless the element
+ * is taller than a whole page, in which case it gets a page of its own
+ * (the only case where a page can exceed pageHeightScene).
  */
-export function paginate(elements, { yMin, yMax, pageHeightScene, toleranceFraction = 0.25 }) {
+export function paginate(elements, { yMin, yMax, pageHeightScene }) {
   const bands = occupiedBands(elements);
-  const tolerance = pageHeightScene * toleranceFraction;
-  const minPage = pageHeightScene * 0.4;
-
-  const gapContaining = (y) => {
-    // gap = space between the end of one band and the start of the next
-    // (or before the first / after the last band).
-    let prevEnd = yMin;
-    for (const [start, end] of bands) {
-      if (y >= prevEnd && y <= start) return [prevEnd, start];
-      prevEnd = Math.max(prevEnd, end);
-    }
-    return [prevEnd, yMax];
-  };
-
   const pages = [];
   let cursor = yMin;
-  let warned = 0;
+  let oversized = 0;
 
   while (cursor < yMax) {
     const target = cursor + pageHeightScene;
@@ -134,29 +123,26 @@ export function paginate(elements, { yMin, yMax, pageHeightScene, toleranceFract
       break;
     }
 
-    const [gapStart, gapEnd] = gapContaining(target);
-    const windowLo = Math.max(cursor + minPage, target - tolerance);
-    const windowHi = target + tolerance;
-    const lo = Math.max(gapStart, windowLo);
-    const hi = Math.min(gapEnd, windowHi);
-
-    let breakY;
-    if (lo <= hi) {
-      // pick the point in [lo, hi] closest to target
-      breakY = Math.min(Math.max(target, lo), hi);
-    } else {
-      breakY = target; // no whitespace nearby: hard cut
-      warned += 1;
+    const straddling = bands.find(([start, end]) => start < target && target < end);
+    let breakY = target;
+    if (straddling) {
+      const [start, end] = straddling;
+      if (start > cursor) {
+        breakY = start; // push the whole element to the next page
+      } else {
+        breakY = end; // element taller than a page: give it its own page
+        oversized += 1;
+      }
     }
 
     pages.push({ yStart: cursor, yEnd: breakY });
     cursor = breakY;
   }
 
-  if (warned > 0) {
+  if (oversized > 0) {
     console.warn(
-      `Warning: ${warned} page break(s) fall inside an element ` +
-        "(no nearby whitespace gap was found).",
+      `Warning: ${oversized} element(s) are taller than a full page and got ` +
+        "a (shrunk-to-fit) page of their own instead of being split.",
     );
   }
 

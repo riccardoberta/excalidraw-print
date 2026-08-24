@@ -57,7 +57,6 @@ npm run print -- <input> [output.pdf] [options]
 | `--page-size` | `a4` | `a4` or `letter` |
 | `--margin-mm` | `15` | Physical page margin, in mm |
 | `--dpi` | `200` | Raster resolution used when rendering each page |
-| `--tolerance` | `0.25` | How far (as a fraction of a page height) to search for a whitespace gap when picking a page break |
 | `--keep-guide` | off | Keep the red guide rectangle visible in the printed output instead of excluding it |
 
 ### Examples
@@ -101,7 +100,7 @@ Since the app isn't code-signed, **the first time you launch it** macOS Gatekeep
 1. **Load the scene** — from a local file, an OSS shareable link, or by joining an Excalidraw+ room and exporting an SVG with the scene embedded in it.
 2. **Find the margins** — locate the red-stroked rectangle(s) and take their combined x-range.
 3. **Measure the content** — compute the vertical bounding box of every other element.
-4. **Paginate** — walk down the content in physical-page-height increments, snapping each break point into the nearest whitespace gap between elements (within `--tolerance`), falling back to a hard cut only when no gap exists nearby.
+4. **Paginate** — walk down the content in physical-page-height increments. An element is never cut: if the nominal page height would land inside one, the break backs off to just before it instead (that element moves whole to the next page, shrinking this one). The only exception is a single element taller than a full page, which gets a page of its own instead — rendered at a reduced scale so it still fits within the printable area.
 5. **Render** — for each page, a synthetic Excalidraw "frame" element is used to crop the scene to that page's exact rectangle via `exportToSvg`'s native frame-export support, then rasterized in Chromium at the target DPI.
 6. **Assemble** — the page images are placed onto A4/Letter PDF pages with the requested margins via `pdf-lib`.
 

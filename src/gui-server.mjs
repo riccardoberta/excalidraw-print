@@ -73,7 +73,6 @@ async function handleGenerate(req, res) {
       pageSize: PAGE_SIZES_MM[body.pageSize] ? body.pageSize : "a4",
       marginMm: Number(body.marginMm) || 15,
       dpi: Number(body.dpi) || 200,
-      tolerance: body.tolerance !== undefined ? Number(body.tolerance) : 0.25,
       keepGuide: !!body.keepGuide,
     });
     res.write(`DONE:${result}\n`);

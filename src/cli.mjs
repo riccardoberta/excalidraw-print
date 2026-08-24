@@ -28,7 +28,6 @@ Options:
   --page-size a4|letter   default: a4
   --margin-mm N           default: 15
   --dpi N                 default: 200
-  --tolerance N           fraction of a page height to search for a whitespace break (default 0.25)
   --keep-guide            do not exclude the red guide rectangle from the printed output
 `);
 }
@@ -49,7 +48,6 @@ async function main() {
     pageSize: args["page-size"] || "a4",
     marginMm: Number(args["margin-mm"] || 15),
     dpi: Number(args.dpi || 200),
-    tolerance: Number(args.tolerance || 0.25),
     keepGuide: !!args["keep-guide"],
   });
 }
