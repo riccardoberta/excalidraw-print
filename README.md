@@ -82,6 +82,18 @@ This starts a server on [http://127.0.0.1:5173](http://127.0.0.1:5173) (open it 
 
 Set the `PORT` environment variable to use a different port, e.g. `PORT=8080 npm run gui`.
 
+### Install as a Mac app
+
+To launch the GUI without a terminal — from Spotlight, Launchpad, or `~/Applications` — install it as a small app bundle:
+
+```bash
+npm run install:mac
+```
+
+This symlinks [`mac/excalidraw-print.app`](mac/excalidraw-print.app) into `~/Applications/excalidraw-print.app`. The app is just a launcher script (no Xcode build involved): double-clicking it starts the local server if it isn't already running and opens the form in your default browser; quitting the app (Cmd+Q, or Dock → Quit) stops the server. It resolves its project directory relative to itself, so it keeps working if you move the whole `excalidraw-print` folder — as long as `mac/excalidraw-print.app` stays inside it.
+
+Since the app isn't code-signed, **the first time you launch it** macOS Gatekeeper will likely refuse to open it with a "cannot be opened because the developer cannot be verified" warning. Right-click (or Control-click) the app in `~/Applications` and choose **Open**, then confirm in the dialog — this is only needed once.
+
 ## How it works, briefly
 
 1. **Load the scene** — from a local file, an OSS shareable link, or by joining an Excalidraw+ room and exporting an SVG with the scene embedded in it.

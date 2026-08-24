@@ -1,0 +1,32 @@
+#!/bin/bash
+# Launcher for the excalidraw-print GUI. Resolves the project directory
+# relative to this bundle, so it keeps working if the repo is moved
+# (as long as this .app stays inside <repo>/mac/).
+set -e
+
+SCRIPT_DIR="$(cd -P "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+PORT="${PORT:-5173}"
+NODE_BIN="/usr/local/bin/node"
+[ -x "$NODE_BIN" ] || NODE_BIN="$(command -v node)"
+
+cd "$PROJECT_DIR"
+
+SERVER_PID=""
+if ! curl -s -o /dev/null "http://127.0.0.1:$PORT/defaults"; then
+  "$NODE_BIN" build.mjs
+  "$NODE_BIN" src/gui-server.mjs &
+  SERVER_PID=$!
+  trap '[ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null' EXIT
+
+  for _ in $(seq 1 30); do
+    curl -s -o /dev/null "http://127.0.0.1:$PORT/defaults" && break
+    sleep 0.3
+  done
+fi
+
+open "http://127.0.0.1:$PORT"
+
+if [ -n "$SERVER_PID" ]; then
+  wait "$SERVER_PID"
+fi
