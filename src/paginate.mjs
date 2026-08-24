@@ -185,8 +185,8 @@ export function paginate(elements, { yMin, yMax, pageHeightScene }) {
 
   if (oversized > 0) {
     console.warn(
-      `Warning: ${oversized} element(s) are taller than a full page and got ` +
-        "a (shrunk-to-fit) page of their own instead of being split.",
+      `Warning: ${oversized} block(s) are taller than a full page; each got ` +
+        "a taller page of its own (same scale as the rest) instead of being split.",
     );
   }
 

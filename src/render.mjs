@@ -94,11 +94,9 @@ export async function renderToPdf(scene, bounds, pages, options) {
   if (!sizeMm) throw new Error(`Formato pagina sconosciuto: ${pageSize}`);
 
   const printableWidthMm = sizeMm.width - 2 * marginMm;
-  const printableHeightMm = sizeMm.height - 2 * marginMm;
   const pxPerMm = dpi / 25.4;
   const ptPerPx = 72 / dpi;
   const widthPx = printableWidthMm * pxPerMm;
-  const printableHeightPx = printableHeightMm * pxPerMm;
 
   const sceneWidth = bounds.xMax - bounds.xMin;
   const scale = widthPx / sceneWidth; // px per scene-unit
@@ -118,44 +116,38 @@ export async function renderToPdf(scene, bounds, pages, options) {
       const sceneHeight = yEnd - yStart;
       const frame = makeFrameElement(bounds.xMin, yStart, sceneWidth, sceneHeight);
 
-      // Normally every page renders at the same scale (full printable
-      // width). The one exception is a single element taller than a full
-      // page (paginate() gives it its own, taller-than-normal page rather
-      // than cutting it) — shrink that page's own scale so it still fits
-      // within the printable height, instead of overflowing the sheet.
-      let heightPx = sceneHeight * scale;
-      let pageWidthPx = widthPx;
-      if (heightPx > printableHeightPx) {
-        const shrink = printableHeightPx / heightPx;
-        heightPx *= shrink;
-        pageWidthPx *= shrink;
-      }
-
+      // Every page renders at the same scale (full printable width), so
+      // pages always look consistent with one another. A single block
+      // taller than a full page (paginate() gives it its own page rather
+      // than cutting it) is not shrunk to fit either — that page's physical
+      // height simply grows enough to hold it, instead.
+      const heightPx = sceneHeight * scale;
       const outPath = path.join(tmpDir, `page-${i + 1}.png`);
 
       console.log(`Rendering page ${i + 1}/${pages.length}...`);
       await renderPageToPng(
         page,
-        { elements: scene.elements, files: scene.files, frame, widthPx: pageWidthPx, heightPx },
+        { elements: scene.elements, files: scene.files, frame, widthPx, heightPx },
         outPath,
       );
-      pngPaths.push({ outPath, widthPx: pageWidthPx, heightPx });
+      pngPaths.push({ outPath, heightPx });
     }
 
     const pdfDoc = await PDFDocument.create();
     const pageWidthPt = mmToPt(sizeMm.width);
     const pageHeightPt = mmToPt(sizeMm.height);
     const marginPt = mmToPt(marginMm);
+    const imgWidthPt = widthPx * ptPerPx;
 
-    for (const { outPath, widthPx: pageWidthPx, heightPx } of pngPaths) {
+    for (const { outPath, heightPx } of pngPaths) {
       const pngBytes = fs.readFileSync(outPath);
       const png = await pdfDoc.embedPng(pngBytes);
-      const pdfPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
-      const imgWidthPt = pageWidthPx * ptPerPx;
       const imgHeightPt = heightPx * ptPerPx;
+      const thisPageHeightPt = Math.max(pageHeightPt, imgHeightPt + 2 * marginPt);
+      const pdfPage = pdfDoc.addPage([pageWidthPt, thisPageHeightPt]);
       pdfPage.drawImage(png, {
         x: marginPt,
-        y: pageHeightPt - marginPt - imgHeightPt,
+        y: thisPageHeightPt - marginPt - imgHeightPt,
         width: imgWidthPt,
         height: imgHeightPt,
       });
