@@ -90,7 +90,9 @@ To launch the GUI without a terminal — from Spotlight, Launchpad, or `~/Applic
 npm run install:mac
 ```
 
-This symlinks [`mac/excalidraw-print.app`](mac/excalidraw-print.app) into `~/Applications/excalidraw-print.app`. The app is just a launcher script (no Xcode build involved): double-clicking it starts the local server if it isn't already running and opens the form in your default browser; quitting the app (Cmd+Q, or Dock → Quit) stops the server. It resolves its project directory relative to itself, so it keeps working if you move the whole `excalidraw-print` folder — as long as `mac/excalidraw-print.app` stays inside it.
+This symlinks [`mac/excalidraw-print.app`](mac/excalidraw-print.app) into `~/Applications/excalidraw-print.app`. The app is just a launcher script (no Xcode build involved): double-clicking it starts the local server if it isn't already running and opens the form in its own chrome-less window (using the Chromium build Playwright already manages, in `--app=` mode — no tabs or address bar, so it feels like a real app rather than a browser tab); closing that window or quitting the app (Cmd+Q, or Dock → Quit) stops the server. It resolves its project directory relative to itself, so it keeps working if you move the whole `excalidraw-print` folder — as long as `mac/excalidraw-print.app` stays inside it.
+
+Diagnostics for every launch are logged to `~/Library/Logs/excalidraw-print.log`, useful if the app ever fails silently (nothing is visible in a terminal when it's launched from Spotlight/Finder).
 
 Since the app isn't code-signed, **the first time you launch it** macOS Gatekeeper will likely refuse to open it with a "cannot be opened because the developer cannot be verified" warning. Right-click (or Control-click) the app in `~/Applications` and choose **Open**, then confirm in the dialog — this is only needed once.
 
