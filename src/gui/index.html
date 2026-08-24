@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>excalidraw-print</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      body {
+        max-width: 640px;
+        margin: 2.5rem auto;
+        padding: 0 1.5rem;
+        line-height: 1.4;
+      }
+      h1 {
+        font-size: 1.3rem;
+      }
+      form {
+        display: grid;
+        gap: 0.9rem;
+        margin-top: 1.5rem;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+      }
+      .hint {
+        font-weight: 400;
+        opacity: 0.65;
+        font-size: 0.8rem;
+      }
+      input[type="text"],
+      input[type="number"],
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.45rem 0.55rem;
+        font-size: 0.95rem;
+        border: 1px solid #8888;
+        border-radius: 6px;
+        background: transparent;
+        color: inherit;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.9rem;
+      }
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .checkbox-row label {
+        margin: 0;
+      }
+      button {
+        justify-self: start;
+        padding: 0.55rem 1.3rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        background: #6965db;
+        color: white;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      pre#log {
+        margin-top: 1.5rem;
+        padding: 0.8rem;
+        background: #0001;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        max-height: 260px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        display: none;
+      }
+      #result {
+        margin-top: 1rem;
+        padding: 0.7rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        display: none;
+      }
+      #result.ok {
+        background: #2f9e4422;
+        border: 1px solid #2f9e4466;
+      }
+      #result.err {
+        background: #e0313122;
+        border: 1px solid #e0313166;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>excalidraw-print</h1>
+    <p class="hint">
+      Paginate a red-rectangle-bounded Excalidraw drawing into a print-ready PDF.
+    </p>
+
+    <form id="form">
+      <div>
+        <label for="input">Excalidraw link or .excalidraw file path</label>
+        <input type="text" id="input" name="input" placeholder="https://... or /path/to/file.excalidraw" required />
+      </div>
+
+      <div class="row">
+        <div style="grid-column: span 2">
+          <label for="outDir">Destination folder</label>
+          <input type="text" id="outDir" name="outDir" />
+        </div>
+        <div>
+          <label for="outFile">File name</label>
+          <input type="text" id="outFile" name="outFile" value="output.pdf" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="pageSize">Page size</label>
+          <select id="pageSize" name="pageSize">
+            <option value="a4">A4</option>
+            <option value="letter">Letter</option>
+          </select>
+        </div>
+        <div>
+          <label for="marginMm">Margin <span class="hint">(mm)</span></label>
+          <input type="number" id="marginMm" name="marginMm" value="15" min="0" step="1" />
+        </div>
+        <div>
+          <label for="dpi">DPI</label>
+          <input type="number" id="dpi" name="dpi" value="200" min="72" step="1" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="tolerance">Break tolerance <span class="hint">(0-1)</span></label>
+          <input type="number" id="tolerance" name="tolerance" value="0.25" min="0" max="1" step="0.05" />
+        </div>
+        <div class="checkbox-row" style="align-self: end; padding-bottom: 0.5rem">
+          <input type="checkbox" id="keepGuide" name="keepGuide" />
+          <label for="keepGuide">Keep guide rectangle</label>
+        </div>
+      </div>
+
+      <button type="submit" id="submit">Generate PDF</button>
+    </form>
+
+    <pre id="log"></pre>
+    <div id="result"></div>
+
+    <script>
+      const form = document.getElementById("form");
+      const submitBtn = document.getElementById("submit");
+      const log = document.getElementById("log");
+      const result = document.getElementById("result");
+      const outDirInput = document.getElementById("outDir");
+
+      fetch("/defaults")
+        .then((r) => r.json())
+        .then((d) => {
+          outDirInput.value = d.outDir;
+          outDirInput.placeholder = d.outDir;
+        });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        log.style.display = "block";
+        log.textContent = "";
+        result.style.display = "none";
+
+        const payload = Object.fromEntries(new FormData(form).entries());
+        payload.keepGuide = form.keepGuide.checked;
+
+        try {
+          const res = await fetch("/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const text = decoder.decode(value, { stream: true });
+            buffer += text;
+            log.textContent += text;
+            log.scrollTop = log.scrollHeight;
+          }
+          const doneMatch = buffer.match(/DONE:(.+)/);
+          const errMatch = buffer.match(/ERROR:(.+)/);
+          if (doneMatch) {
+            result.className = "ok";
+            result.textContent = "Saved to: " + doneMatch[1].trim();
+            result.style.display = "block";
+          } else if (errMatch) {
+            result.className = "err";
+            result.textContent = "Error: " + errMatch[1].trim();
+            result.style.display = "block";
+          }
+        } catch (err) {
+          result.className = "err";
+          result.textContent = "Error: " + err.message;
+          result.style.display = "block";
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

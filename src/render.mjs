@@ -122,7 +122,7 @@ export async function renderToPdf(scene, bounds, pages, options) {
       const heightPx = (yEnd - yStart) * scale;
       const outPath = path.join(tmpDir, `page-${i + 1}.png`);
 
-      process.stdout.write(`Rendering pagina ${i + 1}/${pages.length}...\n`);
+      console.log(`Rendering page ${i + 1}/${pages.length}...`);
       await renderPageToPng(
         page,
         { elements: scene.elements, files: scene.files, frame, widthPx, heightPx },

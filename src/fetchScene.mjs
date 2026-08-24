@@ -27,7 +27,7 @@ export async function resolveShareLink(page, inputUrl) {
   const match = hash.match(JSON_HASH_RE);
   if (!match) {
     throw new Error(
-      `Non riesco a trovare un hash #json=id,key nell'URL risolto: ${finalUrl}`,
+      `Could not find a #json=id,key hash in the resolved URL: ${finalUrl}`,
     );
   }
 
@@ -80,7 +80,7 @@ export async function fetchScene({ id, key }) {
   const res = await fetch(BACKEND_GET_URL + id);
   if (!res.ok) {
     throw new Error(
-      `Download della scena fallito (HTTP ${res.status}) per id ${id}`,
+      `Failed to download the scene (HTTP ${res.status}) for id ${id}`,
     );
   }
   const outer = new Uint8Array(await res.arrayBuffer());

@@ -48,8 +48,8 @@ export function decodeEmbeddedSvgScene(svgText) {
   );
   if (!match) {
     throw new Error(
-      "Nessuna scena incorporata trovata nell'SVG esportato " +
-        "(l'opzione 'Embed scene' non risulta attiva).",
+      "No embedded scene found in the exported SVG " +
+        "(the 'Embed scene' option doesn't appear to be enabled).",
     );
   }
 

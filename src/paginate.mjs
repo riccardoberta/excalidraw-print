@@ -45,17 +45,17 @@ export function findMarginRectangle(elements) {
 
   if (guides.length === 0) {
     throw new Error(
-      "Nessun rettangolo rosso trovato negli elementi del disegno " +
-        "(atteso: un elemento di tipo 'rectangle' con strokeColor rosso, " +
-        "usato per delimitare la larghezza dei margini).",
+      "No red rectangle found among the drawing's elements " +
+        "(expected: a 'rectangle' element with a red strokeColor, " +
+        "used to mark the horizontal margins).",
     );
   }
 
   const angled = guides.filter((el) => el.angle && Math.abs(el.angle) > 1e-3);
   if (angled.length > 0) {
     console.warn(
-      `Attenzione: ${angled.length} rettangolo/i rosso/i risultano ruotati; ` +
-        "ne verra' comunque usato il bounding box assiale.",
+      `Warning: ${angled.length} red rectangle(s) are rotated; ` +
+        "their axis-aligned bounding box will be used anyway.",
     );
   }
 
@@ -71,7 +71,7 @@ export function computeContentBounds(elements, excludeIds) {
     (el) => !el.isDeleted && !excludeIds.has(el.id),
   );
   if (content.length === 0) {
-    throw new Error("Il disegno non contiene elementi oltre al rettangolo guida.");
+    throw new Error("The drawing has no elements besides the guide rectangle.");
   }
   const yMin = Math.min(...content.map((el) => el.y));
   const yMax = Math.max(...content.map((el) => el.y + el.height));
@@ -155,8 +155,8 @@ export function paginate(elements, { yMin, yMax, pageHeightScene, toleranceFract
 
   if (warned > 0) {
     console.warn(
-      `Attenzione: ${warned} interruzione/i di pagina cadono dentro un elemento ` +
-        "(nessuno spazio bianco trovato nelle vicinanze).",
+      `Warning: ${warned} page break(s) fall inside an element ` +
+        "(no nearby whitespace gap was found).",
     );
   }
 

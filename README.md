@@ -70,6 +70,18 @@ node src/cli.mjs examples/margin-guide.excalidraw guide.pdf
 node src/cli.mjs "https://link.excalidraw.com/l/xxxxx/yyyyy" notes.pdf --page-size letter --margin-mm 20
 ```
 
+## GUI
+
+A small local web form is included for interactive use, so you don't need the command line:
+
+```bash
+npm run gui
+```
+
+This starts a server on [http://127.0.0.1:5173](http://127.0.0.1:5173) (open it in a browser) with a form for the link/file, destination folder, output file name, and all the options above (pre-filled with their defaults). Submitting streams progress live and shows the final file path once the PDF is ready. Everything runs locally — nothing leaves your machine except the requests Excalidraw itself needs to load the scene.
+
+Set the `PORT` environment variable to use a different port, e.g. `PORT=8080 npm run gui`.
+
 ## How it works, briefly
 
 1. **Load the scene** — from a local file, an OSS shareable link, or by joining an Excalidraw+ room and exporting an SVG with the scene embedded in it.
@@ -83,7 +95,10 @@ node src/cli.mjs "https://link.excalidraw.com/l/xxxxx/yyyyy" notes.pdf --page-si
 
 ```
 src/
-  cli.mjs           entry point: argument parsing, orchestration
+  cli.mjs           CLI entry point: argument parsing
+  gui-server.mjs     GUI entry point: local web server + streaming job log
+  gui/index.html     GUI form page
+  run.mjs            shared pipeline: load -> find margins -> paginate -> render, used by both CLI and GUI
   fetchScene.mjs     OSS shareable-link (#json=...) download + decrypt
   exportViaApp.mjs   Excalidraw+ room join + in-app export automation
   paginate.mjs       margin detection, content bounds, page-break search

@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "build": "node build.mjs",
-    "print": "node build.mjs && node src/cli.mjs"
+    "print": "node build.mjs && node src/cli.mjs",
+    "gui": "node build.mjs && node src/gui-server.mjs"
   },
   "keywords": [],
   "author": "",
