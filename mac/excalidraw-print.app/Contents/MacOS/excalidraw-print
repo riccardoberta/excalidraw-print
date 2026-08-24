@@ -44,6 +44,9 @@ fi
 # Prefer opening as a standalone, chrome-less app window (using the
 # Chromium build Playwright already manages) instead of a regular browser
 # tab; fall back to the system default browser if that's unavailable.
+# --remote-debugging-port marks this as an automation-controlled instance
+# (even though nothing connects to it), which is what keeps this
+# "Chrome for Testing" build from showing its "not for regular use" banner.
 CHROME_PATH="$("$NODE_BIN" -e "console.log(require('playwright').chromium.executablePath())" 2>/dev/null || true)"
 echo "chrome path: $CHROME_PATH"
 
@@ -52,7 +55,9 @@ if [ -n "$CHROME_PATH" ] && [ -x "$CHROME_PATH" ]; then
   CHROME_PROFILE_DIR="$(mktemp -d)"
   "$CHROME_PATH" \
     --app="http://127.0.0.1:$PORT" \
+    --window-size=760,700 \
     --user-data-dir="$CHROME_PROFILE_DIR" \
+    --remote-debugging-port=0 \
     --no-first-run \
     --no-default-browser-check \
     >/dev/null 2>&1 &
